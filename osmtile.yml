@@ -7,6 +7,7 @@
     timezone: 'Europe/Paris'
     newUser: "osm"
     dbName: "osm"
+    pbfURL : "http://download.geofabrik.de/europe/france-latest.osm.pbf"
 
   tasks:
     ###################
@@ -106,28 +107,36 @@
 
 
     - name: dl stylesheet
-      remote_user: "{{ newUser }}"
-      shell: "wget https://github.com/gravitystorm/openstreetmap-carto/archive/v2.29.1.tar.gz"
+      sudo: yes
+      sudo_user: "{{ newUser }}"
+      shell: "if [ ! -e v2.29.1.tar.gz ]; then wget https://github.com/gravitystorm/openstreetmap-carto/archive/v2.29.1.tar.gz; fi"
       args:
         chdir: "/home/{{ newUser }}/"
 
     - name: extract stylesheet
-      remote_user: "{{ newUser }}"
+      sudo: yes
+      sudo_user: "{{ newUser }}"
       shell: "tar -xzf v2.29.1.tar.gz"
       args:
         chdir: "/home/{{ newUser }}/"
 
     - name: dl mod_tile
-      remote_user: "{{ newUser }}"
-      shell: "wget https://github.com/openstreetmap/mod_tile/archive/6c2cb243e4c8b047950ab8062cd66245f20a5d2f.tar.gz -O mod_tile.tar.gz"
+      sudo: yes
+      sudo_user: "{{ newUser }}"
+      shell: "if [ ! -e \"mod_tile.tar.gz\" ]; then wget https://github.com/openstreetmap/mod_tile/archive/6c2cb243e4c8b047950ab8062cd66245f20a5d2f.tar.gz -O mod_tile.tar.gz; fi"
       args:
         chdir: "/home/{{ newUser }}/"
 
     - name: extract mod_tile
-      remote_user: "{{ newUser }}"
+      sudo: yes
+      sudo_user: "{{ newUser }}"
       shell: "tar -xzf mod_tile.tar.gz"
       args:
         chdir: "/home/{{ newUser }}/"
 
-
-
+    - name: dl osm data
+      sudo: yes
+      sudo_user: "{{ newUser }}"
+      shell: "if [ ! -e \"osm_data.pbf\" ]; then wget {{ pbfURL}}  -O osm_data.pbf; fi"
+      args:
+        chdir: "/home/{{ newUser }}/"
