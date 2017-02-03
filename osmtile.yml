@@ -1,0 +1,133 @@
+---
+- hosts: all
+  remote_user: vagrant
+  sudo: yes
+
+  vars:
+    timezone: 'Europe/Paris'
+    newUser: "osm"
+    dbName: "osm"
+
+  tasks:
+    ###################
+    # User Management
+    ###################
+    - name: Create user
+      user: name="{{ newUser }}"
+            comment="{{ newUser }} user"
+            shell=/bin/bash
+
+    - name: Add {{ item }} to sudoers
+      template: src=templates/sudoers-user.j2
+                dest=/etc/sudoers.d/{{ item }}-sudoer
+                validate='visudo -cf %s'
+      with_items:
+        - "{{ newUser }}}"
+
+    - name: Add my public key to "{{ newUser }}"
+      authorized_key: user="{{ newUser }}"
+                      key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+
+    - name: apt en https
+      apt: name=apt-transport-https state=present
+
+    - name :  repo pour backport
+      apt_repository: repo='deb http://http.debian.net/debian jessie-backports main' state=present
+
+    - name: apt-get update
+      apt: update_cache=yes cache_valid_time=3600 # upgrade only is older than 1H
+
+  #  - name: apt-get upgrade
+  #    apt: upgrade=yes force=yes
+
+    ###################
+    # Security
+    ###################
+    - name: Install fail2ban
+      apt: name=fail2ban state=present
+
+    - name: Start fail2ban service
+      service: name=fail2ban state=started enabled=true
+
+   
+    ###################
+    # osm tile, the real work
+    ###################
+    - name : OSM tiles server real work
+      apt: name={{ item }} state=present
+      with_items:
+        - curl
+        - unzip
+        - gdal-bin
+        - mapnik-utils
+        - node-carto
+        - autoconf
+        - libtool
+        - libmapnik-dev
+        - apache2-dev
+        - apache2
+        - postgresql-9.4-postgis-2.1
+        - postgresql-contrib-9.4
+        - osm2pgsql
+        
+
+
+
+
+    - name: createuser for db
+      sudo: yes
+      sudo_user: "postgres"
+      shell: "createuser {{ newUser }} &> /dev/null" # todo remove it first ?
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+    - name: createdb
+      sudo: yes
+      sudo_user: "postgres"
+      shell: "createdb -E UTF8 -O {{ newUser }}  {{ dbName }} &> /dev/null" # todo remove it first ?
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+    - name: create hstore
+      sudo: yes
+      sudo_user: "postgres"
+      shell: "psql -c \"CREATE EXTENSION hstore;\" -d {{ dbName }} &> /dev/null" # todo remove it first ?
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+    - name: create postgis
+      sudo: yes
+      sudo_user: "postgres"
+      shell: "psql -c \"CREATE EXTENSION postgis;\" -d {{ dbName }} &> /dev/null" # todo remove it first ?
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+
+
+    - name: dl stylesheet
+      remote_user: "{{ newUser }}"
+      shell: "wget https://github.com/gravitystorm/openstreetmap-carto/archive/v2.29.1.tar.gz"
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+    - name: extract stylesheet
+      remote_user: "{{ newUser }}"
+      shell: "tar -xzf v2.29.1.tar.gz"
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+    - name: dl mod_tile
+      remote_user: "{{ newUser }}"
+      shell: "wget https://github.com/openstreetmap/mod_tile/archive/6c2cb243e4c8b047950ab8062cd66245f20a5d2f.tar.gz -O mod_tile.tar.gz"
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+    - name: extract mod_tile
+      remote_user: "{{ newUser }}"
+      shell: "tar -xzf mod_tile.tar.gz"
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+
+
