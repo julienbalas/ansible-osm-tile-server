@@ -141,3 +141,87 @@
       shell: "if [ ! -e \"osm_data.pbf\" ]; then wget {{ pbfURL}}  -O osm_data.pbf; fi"
       args:
         chdir: "/home/{{ newUser }}/"
+
+    - name: import data into db using osm2pgsql
+      sudo: yes
+      sudo_user: "{{ newUser }}"
+      shell: "osm2pgsql --slim -d {{ dbName }} -C 1600 --hstore -S openstreetmap-carto-2.29.1/openstreetmap-carto.style osm_data.pbf"
+      args:
+        chdir: "/home/{{ newUser }}/"
+
+#as osm
+#cd mod_tile-6c2cb243e4c8b047950ab8062cd66245f20a5d2f/
+#./autogen.sh
+#./configure
+#make
+
+
+#as root
+#su
+#make install
+#make install-mod_tile
+#exit
+#cd ..
+
+
+
+#su
+#apt install curl unzip gdal-bin mapnik-utils node-carto
+#exit
+
+#cd ~/openstreetmap-carto-2.29.1/
+#./get-shapefiles.sh
+
+
+# change dbname
+#sed -i 's/"dbname": "gis"/"dbname": "{{ dbName }}"/' project.mml
+
+#carto project.mml > style.xml
+
+
+#su
+
+#sed -i 's/XML=\/home\/jburgess\/osm\/svn\.openstreetmap\.org\/applications\/rendering\/mapnik\/osm\-local\.xml/XML=\/home\/osm\/openstreetmap-carto-2.29.1\/style.xml/' /usr/local/etc/renderd.conf
+#sed -i 's/HOST=tile\.openstreetmap\.org/HOST=localhost/' /usr/local/etc/renderd.conf
+
+#sed -i 's/plugins_dir=\/usr\/lib\/mapnik\/input/plugins_dir=\/usr\/lib\/mapnik\/2.2\/input\//' /usr/local/etc/renderd.conf
+
+#[mapnik]
+#plugins_dir=/usr/lib/mapnik/2.2/input/
+#font_dir=/usr/share/fonts/truetype
+#font_dir_recurse=1
+
+#cd /home/osm
+#cp mod_tile-6c2cb243e4c8b047950ab8062cd66245f20a5d2f/debian/renderd.init /etc/init.d/renderd
+#chmod a+x /etc/init.d/renderd
+
+#sed -i 's/DAEMON=\/usr\/bin\/$NAME/DAEMON=\/usr\/local\/bin\/$NAME/' /etc/init.d/renderd
+#sed -i 's/DAEMON_ARGS=""/DAEMON_ARGS=" -c \/usr\/local\/etc\/renderd.conf"/' /etc/init.d/renderd
+#sed -i 's/RUNASUSER=www-data/RUNASUSER=osm/' /etc/init.d/renderd
+
+#mkdir -p /var/lib/mod_tile
+#chown osm:osm /var/lib/mod_tile
+
+
+#systemctl daemon-reload
+#service renderd start
+
+
+#AS ROOT 
+#echo "LoadModule tile_module /usr/lib/apache2/modules/mod_tile.so" > /etc/apache2/mods-available/tile.load
+#ln -s /etc/apache2/mods-available/tile.load /etc/apache2/mods-enabled/
+
+#Add the following just before <?/VirtualHost> in /etc/apache2/sites-enabled/000-default.conf To do this, you can use the nano text editor
+
+#LoadTileConfigFile /usr/local/etc/renderd.conf
+#ModTileRenderdSocketName /var/run/renderd/renderd.sock
+## Timeout before giving up for a tile to be rendered
+#ModTileRequestTimeout 0
+## Timeout before giving up for a tile to be rendered that is otherwise missing
+#ModTileMissingRequestTimeout 30
+
+
+
+# service apache2 restart
+
+# http://localhost/osm_tiles/0/0/0.png
