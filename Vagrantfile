@@ -15,9 +15,16 @@ Vagrant.configure(2) do |config|
   # Bridged networks make the machine appear as another physical device on
   # your network.
   # config.vm.network "public_network"
+ 
  config.vm.provider "virtualbox" do |vb|
      vb.gui = true
      vb.memory = "4096"
+#     vb.customize [
+#            'createhd', 
+#            '--format', 'VDI', 
+#            '--filename', '/media/julien/c28c9c83-3d4b-42e7-bb18-92ca49adbebe/osm/modtile.vdi', 
+#            '--size', 200*1024*1024 # 50 GB
+#            ] 
    end
 
   config.vm.provision "ansible" do |ansible|
