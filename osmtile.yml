@@ -7,9 +7,9 @@
     timezone: 'Europe/Paris'
     newUser: "osm"
     dbName: "osm"
-    #pbfURL : "http://download.geofabrik.de/europe/france-latest.osm.pbf"
-    pbfURL : "http://download.geofabrik.de/europe/france/bretagne-latest.osm.pbf"
-
+    # pbfURL : "http://download.geofabrik.de/europe/france-latest.osm.pbf"
+    # pbfURL : "http://download.geofabrik.de/europe/france/bretagne-latest.osm.pbf"
+    pbfURL : "http://127.0.0.1/2017_02_04_rennes.pbf"
   tasks:
     ###################
     # User Management
@@ -72,15 +72,11 @@
         - postgresql-9.4-postgis-2.1
         - postgresql-contrib-9.4
         - osm2pgsql
-        
-
-
-
 
     - name: createuser for db
       sudo: yes
       sudo_user: "postgres"
-      shell: "createuser {{ newUser }} &> /dev/null" # todo remove it first ?
+      shell: "createuser {{ newUser }} &> /dev/null" # todo remove it first ? or https://github.com/osm-fr/ansible-scripts/blob/master/roles/osm2pgsql/tasks/main.yml
       args:
         chdir: "/home/{{ newUser }}/"
 
@@ -145,32 +141,30 @@
     - name: import data into db using osm2pgsql
       sudo: yes
       sudo_user: "{{ newUser }}"
-      shell: "osm2pgsql --slim -d {{ dbName }} -C 1600 --hstore -S openstreetmap-carto-2.29.1/openstreetmap-carto.style osm_data.pbf"
+      shell: "osm2pgsql --slim --cache-strategy sparse -d {{ dbName }} -C 1000 --hstore -S openstreetmap-carto-2.29.1/openstreetmap-carto.style osm_data.pbf"
       args:
         chdir: "/home/{{ newUser }}/"
 
-#as osm
-#cd mod_tile-6c2cb243e4c8b047950ab8062cd66245f20a5d2f/
-#./autogen.sh
-#./configure
-#make
+    - name: build mod tile
+      sudo: yes
+      sudo_user: "{{ newUser }}"
+      shell: "./autogen.sh && ./configure && make"
+      args:
+        chdir: "/home/{{ newUser }}/mod_tile-6c2cb243e4c8b047950ab8062cd66245f20a5d2f/"
 
 
-#as root
-#su
-#make install
-#make install-mod_tile
-#exit
-#cd ..
+    - name: install mod tile
+      shell: "make install && make install-mod_tile"
+      args:
+        chdir: "/home/{{ newUser }}/mod_tile-6c2cb243e4c8b047950ab8062cd66245f20a5d2f/"
 
+    - name: get shapefile
+      sudo: yes
+      sudo_user: "{{ newUser }}"
+      shell: "if [ ! -e \"data/world_boundaries-spherical.tgz\" ]; then ./get-shapefiles.sh; fi"
+      args:
+        chdir: "/home/{{ newUser }}/openstreetmap-carto-2.29.1/"
 
-
-#su
-#apt install curl unzip gdal-bin mapnik-utils node-carto
-#exit
-
-#cd ~/openstreetmap-carto-2.29.1/
-#./get-shapefiles.sh
 
 
 # change dbname
